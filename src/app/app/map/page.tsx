@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { MapView } from '@/components/map/MapView';
 import { VesselList } from '@/components/VesselList';
 import { MapLegend } from '@/components/MapLegend';
-import { ScrapeAllButton } from '@/components/ScrapeAllButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -98,14 +97,15 @@ export default function MapPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <ScrapeAllButton />
           <Button variant="outline" size="icon" asChild>
             <Link href="/app/alerts">
               <Bell className="h-4 w-4" />
             </Link>
           </Button>
-          <Button variant="outline" size="icon" onClick={handleSignOut}>
-            <User className="h-4 w-4" />
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/app/settings">
+              <User className="h-4 w-4" />
+            </Link>
           </Button>
           <Button
             variant="outline"

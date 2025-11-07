@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { parseAISMessage, createAISStreamSubscription, isInBalticBBox, VesselPosition } from '@/lib/ais';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { globalVesselLookup } from '@/lib/globalVesselLookup';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,6 +13,9 @@ const clients = new Set<ReadableStreamDefaultController>();
 const vesselCache = new Map<number, VesselPosition>();
 let lastDbUpdate = Date.now();
 const DB_UPDATE_INTERVAL = 60000; // Update database every 60 seconds
+
+// Track scraped vessels to avoid re-scraping
+const scrapedVessels = new Set<number>();
 
 // Connect to AISStream WebSocket (singleton pattern)
 let wsConnection: WebSocket | null = null;
@@ -42,6 +46,23 @@ async function batchUpdateDatabase() {
       console.error('❌ Error updating vessels:', error);
     } else {
       console.log(`✅ Updated ${vessels.length} vessels in database`);
+      
+      // AUTO-SCRAPE new vessels in background
+      vessels.forEach(async (v) => {
+        if (!scrapedVessels.has(v.mmsi)) {
+          scrapedVessels.add(v.mmsi);
+          
+          // Scrape in background (don't await)
+          globalVesselLookup(v.mmsi).then(data => {
+            if (data) {
+              console.log(`🔍 Auto-enriched: ${data.vesselName || v.mmsi} (Quality: ${data.dataQualityScore}%)`);
+            }
+          }).catch(err => {
+            console.error(`Failed to enrich ${v.mmsi}:`, err);
+          });
+        }
+      });
+      
       vesselCache.clear();
     }
   } catch (error) {
@@ -177,4 +198,3 @@ export async function GET(request: NextRequest) {
     },
   });
 }
-
