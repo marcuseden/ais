@@ -3,7 +3,10 @@
     {
       "path": "/api/_tasks/check-geofences",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/scrape-all-vessels",
+      "schedule": "0 */6 * * *"
     }
   ]
 }
-
