@@ -9,7 +9,8 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
     "migrate": "tsx scripts/run-migration.ts",
-    "enrich": "tsx scripts/batch-enrich-equasis.ts"
+    "enrich": "tsx scripts/batch-enrich-equasis.ts",
+    "bulk-scrape": "tsx scripts/bulk-scrape-equasis.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
