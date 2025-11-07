@@ -4,6 +4,7 @@
 
 import { supabaseAdmin } from './supabaseAdmin';
 import * as cheerio from 'cheerio';
+import { enrichCommercialData } from './commercialDataScraper';
 
 export interface GlobalVesselData {
   mmsi: number;
@@ -25,6 +26,38 @@ export interface GlobalVesselData {
   companyEmail?: string;
   companyPhone?: string;
   companyWebsite?: string;
+  
+  // COMMERCIAL PROCUREMENT DATA
+  commercialOperator?: string;
+  technicalManager?: string;
+  shipManager?: string;
+  procurementEmail?: string;
+  suppliesEmail?: string;
+  sparesEmail?: string;
+  opsEmail?: string;
+  purchasingEmail?: string;
+  
+  // Port & delivery
+  nextPort?: string;
+  eta?: string;
+  portAgent?: string;
+  agentPhone?: string;
+  agentEmail?: string;
+  
+  // Fleet information
+  fleetName?: string;
+  fleetSize?: number;
+  sisterVessels?: number[];
+  
+  // Technical/class
+  classificationSociety?: string;
+  lastDrydock?: string;
+  nextSurveyDue?: string;
+  pAndIClub?: string;
+  
+  // Crew
+  crewSize?: number;
+  crewNationality?: string;
   
   // Vessel details
   vesselType?: string;
@@ -328,6 +361,15 @@ export async function globalVesselLookup(mmsi: number): Promise<GlobalVesselData
       }, { onConflict: 'mmsi' });
 
     console.log(`✅ Global lookup completed for ${mergedData.vesselName || mmsi} (${sourceCount} sources, quality: ${mergedData.dataQualityScore}%)`);
+
+    // PHASE 2: Enrich with commercial/procurement data
+    try {
+      const commercialData = await enrichCommercialData(mmsi, mergedData);
+      Object.assign(mergedData, commercialData);
+      console.log(`💼 Commercial enrichment completed for ${mmsi}`);
+    } catch (error) {
+      console.error('Commercial enrichment failed:', error);
+    }
 
     return mergedData as GlobalVesselData;
 

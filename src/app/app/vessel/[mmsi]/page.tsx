@@ -9,6 +9,7 @@ import { ArrowLeft, Ship, Building, Mail, Phone, Globe, MessageCircle, Navigatio
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { MapView } from '@/components/map/MapView';
+import { calculateVesselDataQuality, getQualityColor } from '@/lib/dataQuality';
 
 interface VesselData {
   mmsi: number;
@@ -36,6 +37,37 @@ interface RegistryData {
   yearBuilt?: number;
   dataQualityScore?: number;
   dataSources?: string[];
+  
+  // COMMERCIAL PROCUREMENT DATA
+  commercialOperator?: string;
+  technicalManager?: string;
+  shipManager?: string;
+  procurementEmail?: string;
+  suppliesEmail?: string;
+  sparesEmail?: string;
+  opsEmail?: string;
+  purchasingEmail?: string;
+  technicalEmail?: string;
+  
+  // Port & delivery
+  nextPort?: string;
+  eta?: string;
+  portAgent?: string;
+  agentPhone?: string;
+  agentEmail?: string;
+  
+  // Fleet
+  fleetName?: string;
+  fleetSize?: number;
+  
+  // Technical
+  classificationSociety?: string;
+  lastDrydock?: string;
+  pAndIClub?: string;
+  
+  // Crew
+  crewSize?: number;
+  crewNationality?: string;
 }
 
 interface ChatData {
@@ -251,16 +283,112 @@ export default function VesselPage() {
           </CardContent>
         </Card>
 
+        {/* Data Quality Score */}
+        {registry?.found && (() => {
+          const quality = calculateVesselDataQuality(registry);
+          return (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Data Quality Score</div>
+                    <div className="text-3xl font-bold">{quality.score}/100</div>
+                    <div className="text-sm mt-1">
+                      <span className={`inline-block px-3 py-1 rounded-full border font-semibold ${getQualityColor(quality.score)}`}>
+                        Grade {quality.grade} - {quality.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-muted-foreground">Completeness</div>
+                    <div className="text-2xl font-semibold">{quality.completeness}%</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {quality.strengths.length} strengths
+                    </div>
+                  </div>
+                </div>
+                {quality.strengths.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">✅ Available Data:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {quality.strengths.map((s, i) => (
+                        <span key={i} className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded-lg border border-green-200">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {quality.missingFields.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">⚠️ Missing Critical Data:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {quality.missingFields.slice(0, 5).map((f, i) => (
+                        <span key={i} className="text-xs px-2 py-1 bg-orange-50 text-orange-700 rounded-lg border border-orange-200">
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+        {/* Port & Delivery Information */}
+        {registry?.found && (registry.nextPort || registry.portAgent) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Port & Delivery</CardTitle>
+              <CardDescription>Next port call and delivery contacts</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {registry.nextPort && (
+                <div>
+                  <div className="text-sm text-muted-foreground">Next Port of Call</div>
+                  <div className="font-semibold text-lg">{registry.nextPort}</div>
+                  {registry.eta && (
+                    <div className="text-sm text-muted-foreground">
+                      ETA: {new Date(registry.eta).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              )}
+              {registry.portAgent && (
+                <div className="border-t pt-3">
+                  <div className="text-sm text-muted-foreground mb-2">Port Agent</div>
+                  <div className="font-medium">{registry.portAgent}</div>
+                  {(registry.agentPhone || registry.agentEmail) && (
+                    <div className="mt-2 space-y-1">
+                      {registry.agentPhone && (
+                        <a href={`tel:${registry.agentPhone}`} className="block text-sm text-primary hover:underline">
+                          📞 {registry.agentPhone}
+                        </a>
+                      )}
+                      {registry.agentEmail && (
+                        <a href={`mailto:${registry.agentEmail}`} className="block text-sm text-primary hover:underline">
+                          📧 {registry.agentEmail}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Vessel Registry Data */}
         {registry?.found ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Building className="h-5 w-5" />
-                Owner & Operator
+                Commercial Operator & Management
               </CardTitle>
               <CardDescription>
-                Data from {registry.dataSources?.join(', ')} • Quality: {registry.dataQualityScore}%
+                Sources: {registry.dataSources?.join(', ')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -316,10 +444,77 @@ export default function VesselPage() {
                 </div>
               )}
 
-              {/* Contact Information */}
+              {/* PROCUREMENT CONTACTS - The Money Makers */}
+              <div className="border-t pt-4">
+                <div className="text-sm font-semibold mb-3">💰 Procurement Contacts</div>
+                <div className="space-y-2">
+                  {registry.procurementEmail && (
+                    <a 
+                      href={`mailto:${registry.procurementEmail}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-green-50 border border-green-200 hover:bg-green-100 transition-colors"
+                    >
+                      <Mail className="h-4 w-4 text-green-600" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-green-700 font-semibold">Procurement Department</div>
+                        <div className="font-medium truncate text-green-900">{registry.procurementEmail}</div>
+                      </div>
+                    </a>
+                  )}
+                  {registry.suppliesEmail && (
+                    <a 
+                      href={`mailto:${registry.suppliesEmail}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors"
+                    >
+                      <Mail className="h-4 w-4 text-blue-600" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-blue-700 font-semibold">Supplies</div>
+                        <div className="font-medium truncate text-blue-900">{registry.suppliesEmail}</div>
+                      </div>
+                    </a>
+                  )}
+                  {registry.sparesEmail && (
+                    <a 
+                      href={`mailto:${registry.sparesEmail}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-colors"
+                    >
+                      <Mail className="h-4 w-4 text-purple-600" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-purple-700 font-semibold">Spare Parts</div>
+                        <div className="font-medium truncate text-purple-900">{registry.sparesEmail}</div>
+                      </div>
+                    </a>
+                  )}
+                  {registry.opsEmail && (
+                    <a 
+                      href={`mailto:${registry.opsEmail}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Mail className="h-4 w-4 text-primary" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground">Operations</div>
+                        <div className="font-medium truncate">{registry.opsEmail}</div>
+                      </div>
+                    </a>
+                  )}
+                  {registry.technicalEmail && (
+                    <a 
+                      href={`mailto:${registry.technicalEmail}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Mail className="h-4 w-4 text-primary" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground">Technical Department</div>
+                        <div className="font-medium truncate">{registry.technicalEmail}</div>
+                      </div>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* General Contact Information */}
               {(registry.companyEmail || registry.companyPhone || registry.companyWebsite) && (
                 <div className="border-t pt-4">
-                  <div className="text-sm font-semibold mb-3">Contact Information</div>
+                  <div className="text-sm font-semibold mb-3">General Contact</div>
                   <div className="space-y-2">
                     {registry.companyEmail && (
                       <a 
@@ -328,7 +523,7 @@ export default function VesselPage() {
                       >
                         <Mail className="h-4 w-4 text-primary" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-muted-foreground">Email</div>
+                          <div className="text-xs text-muted-foreground">General Email</div>
                           <div className="font-medium truncate">{registry.companyEmail}</div>
                         </div>
                       </a>
@@ -358,6 +553,75 @@ export default function VesselPage() {
                           <div className="font-medium truncate">{registry.companyWebsite}</div>
                         </div>
                       </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Fleet Information */}
+              {(registry.fleetName || registry.fleetSize) && (
+                <div className="border-t pt-4">
+                  <div className="text-sm font-semibold mb-2">Fleet Information</div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {registry.fleetName && (
+                      <div>
+                        <div className="text-muted-foreground">Fleet Name</div>
+                        <div className="font-medium">{registry.fleetName}</div>
+                      </div>
+                    )}
+                    {registry.fleetSize && (
+                      <div>
+                        <div className="text-muted-foreground">Fleet Size</div>
+                        <div className="font-medium">{registry.fleetSize} vessels</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Technical & Class Information */}
+              {(registry.classificationSociety || registry.lastDrydock || registry.pAndIClub) && (
+                <div className="border-t pt-4">
+                  <div className="text-sm font-semibold mb-2">Technical & Certificates</div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {registry.classificationSociety && (
+                      <div>
+                        <div className="text-muted-foreground">Class Society</div>
+                        <div className="font-medium">{registry.classificationSociety}</div>
+                      </div>
+                    )}
+                    {registry.lastDrydock && (
+                      <div>
+                        <div className="text-muted-foreground">Last Drydock</div>
+                        <div className="font-medium">{registry.lastDrydock}</div>
+                      </div>
+                    )}
+                    {registry.pAndIClub && (
+                      <div className="col-span-2">
+                        <div className="text-muted-foreground">P&I Club</div>
+                        <div className="font-medium">{registry.pAndIClub}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Crew Information */}
+              {(registry.crewSize || registry.crewNationality) && (
+                <div className="border-t pt-4">
+                  <div className="text-sm font-semibold mb-2">Crew Provisioning</div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {registry.crewSize && (
+                      <div>
+                        <div className="text-muted-foreground">Crew Size</div>
+                        <div className="font-medium">{registry.crewSize} persons</div>
+                      </div>
+                    )}
+                    {registry.crewNationality && (
+                      <div>
+                        <div className="text-muted-foreground">Crew Nationality</div>
+                        <div className="font-medium">{registry.crewNationality}</div>
+                      </div>
                     )}
                   </div>
                 </div>
