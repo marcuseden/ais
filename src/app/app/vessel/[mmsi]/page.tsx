@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Ship, Building, Mail, Phone, Globe, MessageCircle, Navigation, Gauge, MapPin, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { MapView } from '@/components/map/MapView';
 
 interface VesselData {
   mmsi: number;
@@ -98,10 +99,17 @@ export default function VesselPage() {
   const loadChat = async () => {
     try {
       const response = await fetch(`/api/vessel-chat/${mmsi}`);
-      const data = await response.json();
-      setChatData(data);
+      if (response.ok) {
+        const data = await response.json();
+        setChatData(data);
+      } else {
+        // Chat tables might not exist yet - that's ok
+        console.log('Chat system not yet configured');
+        setChatData({ chat: null, messages: [] });
+      }
     } catch (error) {
       console.error('Failed to load chat:', error);
+      setChatData({ chat: null, messages: [] });
     }
   };
 
@@ -179,6 +187,28 @@ export default function VesselPage() {
       </header>
 
       <div className="container mx-auto px-4 py-6 max-w-4xl space-y-4">
+        {/* Map showing vessel position */}
+        {vessel.last_lat && vessel.last_lng && (
+          <Card className="overflow-hidden">
+            <div className="h-[300px] w-full">
+              <MapView
+                vessels={[{
+                  mmsi: vessel.mmsi,
+                  name: vessel.name,
+                  ship_type: vessel.ship_type,
+                  lat: vessel.last_lat,
+                  lng: vessel.last_lng,
+                  sog: vessel.sog,
+                  cog: vessel.cog,
+                  ts: vessel.last_seen,
+                }]}
+                center={[vessel.last_lat, vessel.last_lng]}
+                zoom={12}
+              />
+            </div>
+          </Card>
+        )}
+
         {/* Current Position */}
         <Card>
           <CardHeader>
@@ -359,12 +389,12 @@ export default function VesselPage() {
           <CardContent>
             {/* Messages */}
             <div className="mb-4 space-y-3 max-h-[400px] overflow-y-auto">
-              {chatData?.messages.length === 0 && (
+              {(!chatData || chatData.messages.length === 0) && (
                 <div className="text-center py-8 text-sm text-muted-foreground">
-                  No messages yet. Start a conversation!
+                  {chatData ? 'No messages yet. Start a conversation!' : 'Loading chat...'}
                 </div>
               )}
-              {chatData?.messages.map((msg: any) => (
+              {chatData?.messages && chatData.messages.map((msg: any) => (
                 <div
                   key={msg.id}
                   className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
