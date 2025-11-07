@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/_tasks/check-geofences",
+      "schedule": "* * * * *"
+    }
+  ]
+}
+

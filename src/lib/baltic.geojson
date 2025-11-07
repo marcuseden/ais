@@ -1,0 +1,24 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Baltic Sea (Östersjön)",
+    "description": "Baltic Sea region including the Gulf of Bothnia, Gulf of Finland, and Gulf of Riga"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [[
+      [10.5, 53.5],
+      [10.5, 66.0],
+      [30.0, 66.0],
+      [30.0, 59.5],
+      [28.0, 59.5],
+      [28.0, 57.5],
+      [23.0, 57.5],
+      [23.0, 54.0],
+      [20.0, 54.0],
+      [15.0, 54.0],
+      [10.5, 53.5]
+    ]]
+  }
+}
+
