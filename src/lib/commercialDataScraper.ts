@@ -1,8 +1,14 @@
 // Enhanced commercial data scraper for B2B vessel sales
-// Extracts procurement emails, port agents, ETAs, operator fleets
+// Integrates: MarineTraffic, VesselFinder, Datalastic, Equasis, Class Registries
 
 import * as cheerio from 'cheerio';
 import { supabaseAdmin } from './supabaseAdmin';
+import { getExpectedArrivals, getPortCallHistory, getVesselMasterData } from './scrapers/marineTrafficScraper';
+import { getVesselFinderArrivals } from './scrapers/vesselFinderScraper';
+import { getDatalasticVesselData } from './scrapers/datalasticScraper';
+import { scrapeEquasis } from './scrapers/equasisScraper';
+import { getClassificationData } from './scrapers/classRegistryScraper';
+import { scrapeProcurementEmails } from './scrapers/procurementEmailScraper';
 
 export interface CommercialVesselData {
   mmsi: number;
@@ -47,70 +53,7 @@ export interface CommercialVesselData {
   dataSources: string[];
 }
 
-/**
- * Scrape Equasis for comprehensive commercial data
- * FREE but requires registration
- * https://www.equasis.org
- */
-async function scrapeEquasis(mmsi: number): Promise<Partial<CommercialVesselData> | null> {
-  console.log(`📊 Scraping Equasis for MMSI ${mmsi}...`);
-  
-  try {
-    // Equasis has the BEST commercial data:
-    // - Commercial operator
-    // - Technical manager
-    // - Ship manager
-    // - Complete company details
-    // - Classification society
-    // - Survey dates
-    
-    // TODO: Implement Equasis login + search
-    // Requires cookie-based session
-    
-    return {
-      mmsi,
-      dataSources: ['Equasis'],
-    };
-  } catch (error) {
-    console.error('Equasis scraping error:', error);
-    return null;
-  }
-}
 
-/**
- * Get port call data from MarineTraffic API
- * Requires paid API but gives ETA, port agents, history
- */
-async function getPortCallData(mmsi: number): Promise<Partial<CommercialVesselData> | null> {
-  const apiKey = process.env.MARINETRAFFIC_API_KEY;
-  if (!apiKey) return null;
-  
-  console.log(`🚢 Getting port data for MMSI ${mmsi} from MarineTraffic...`);
-  
-  try {
-    // Get expected arrivals
-    const etaUrl = `https://services.marinetraffic.com/api/exportvessel/v:8/${apiKey}/timespan:20/msgtype:extended/protocol:jsono/mmsi:${mmsi}`;
-    const response = await fetch(etaUrl);
-    
-    if (!response.ok) return null;
-    
-    const data = await response.json();
-    if (!data || data.length === 0) return null;
-    
-    const vessel = data[0];
-    
-    return {
-      mmsi,
-      nextPort: vessel.NEXT_PORT_NAME,
-      nextPortCountry: vessel.NEXT_PORT_COUNTRY,
-      eta: vessel.ETA,
-      dataSources: ['MarineTraffic'],
-    };
-  } catch (error) {
-    console.error('MarineTraffic port data error:', error);
-    return null;
-  }
-}
 
 /**
  * Scrape operator website for procurement emails
@@ -179,32 +122,93 @@ export async function enrichCommercialData(mmsi: number, basicData: any): Promis
     dataSources: [],
   };
 
-  // Get port call data
-  const portData = await getPortCallData(mmsi);
-  if (portData) {
-    Object.assign(commercialData, portData);
-    commercialData.dataSources!.push('MarineTraffic');
+  // PHASE 1: Port & ETA data (MarineTraffic or VesselFinder)
+  try {
+    const mtArrival = await getExpectedArrivals(mmsi);
+    if (mtArrival) {
+      commercialData.nextPort = mtArrival.nextPortName;
+      commercialData.nextPortCountry = mtArrival.nextPortCountry;
+      commercialData.eta = mtArrival.eta;
+      commercialData.dataSources!.push('MarineTraffic');
+      
+      // Get port call history
+      const portHistory = await getPortCallHistory(mmsi, 90);
+      if (portHistory.length > 0) {
+        // Store in port_calls table
+        await Promise.all(portHistory.map(call => 
+          (supabaseAdmin.from('port_calls').insert as any)({
+            mmsi: call.mmsi,
+            port_name: call.portName,
+            port_country: call.portCountry,
+            port_unlocode: call.portUnlocode,
+            ata: call.timeOfArrival,
+            atd: call.timeOfDeparture,
+            cargo_operation: call.cargoOperation,
+          })
+        ));
+        console.log(`✅ Saved ${portHistory.length} port calls for ${mmsi}`);
+      }
+    }
+  } catch (error) {
+    console.error('Port data enrichment error:', error);
   }
 
-  // Get Equasis data (operator, manager, class)
-  const equasisData = await scrapeEquasis(mmsi);
-  if (equasisData) {
-    Object.assign(commercialData, equasisData);
-    commercialData.dataSources!.push('Equasis');
+  // PHASE 2: Try Datalastic for quick all-in-one data
+  try {
+    const datalasticData = await getDatalasticVesselData(mmsi);
+    if (datalasticData) {
+      commercialData.commercialOperator = datalasticData.operator;
+      commercialData.technicalManager = datalasticData.manager;
+      commercialData.classificationSociety = datalasticData.classification;
+      commercialData.dataSources!.push('Datalastic');
+    }
+  } catch (error) {
+    console.error('Datalastic enrichment error:', error);
   }
 
-  // If we have operator info, scrape their website for procurement emails
-  if (basicData.operatorName && basicData.companyWebsite) {
-    const procurementEmails = await scrapeOperatorWebsite(
-      basicData.operatorName,
-      basicData.companyWebsite
-    );
-    
-    if (procurementEmails.length > 0) {
-      commercialData.procurementEmail = procurementEmails[0];
-      commercialData.suppliesEmail = procurementEmails.find(e => e.includes('supplies'));
-      commercialData.sparesEmail = procurementEmails.find(e => e.includes('spares'));
-      commercialData.purchasingEmail = procurementEmails.find(e => e.includes('purchasing'));
+  // PHASE 3: Equasis for ownership hierarchy (best free source)
+  try {
+    const equasisSession = process.env.EQUASIS_SESSION_COOKIE;
+    if (equasisSession) {
+      const equasisData = await scrapeEquasis(mmsi, equasisSession);
+      if (equasisData) {
+        commercialData.commercialOperator = equasisData.commercialOperator || commercialData.commercialOperator;
+        commercialData.technicalManager = equasisData.technicalManager || commercialData.technicalManager;
+        commercialData.shipManager = equasisData.ismManager;
+        commercialData.classificationSociety = equasisData.classificationSociety || commercialData.classificationSociety;
+        commercialData.pAndIClub = equasisData.pAndIClub;
+        commercialData.dataSources!.push('Equasis');
+      }
+    }
+  } catch (error) {
+    console.error('Equasis enrichment error:', error);
+  }
+
+  // PHASE 4: Classification society check (for survey dates - sales trigger!)
+  if (basicData.imoNumber) {
+    try {
+      const classData = await getClassificationData(mmsi, basicData.imoNumber);
+      if (classData) {
+        commercialData.classificationSociety = classData.society;
+        commercialData.lastDrydock = classData.lastDrydock;
+        commercialData.dataSources!.push('Class Registry');
+      }
+    } catch (error) {
+      console.error('Class registry error:', error);
+    }
+  }
+
+  // PHASE 5: Scrape operator website for procurement emails (THE GOLD)
+  if (basicData.companyWebsite) {
+    try {
+      const procurementContacts = await scrapeProcurementEmails(basicData.companyWebsite);
+      Object.assign(commercialData, procurementContacts);
+      if (Object.keys(procurementContacts).length > 0) {
+        commercialData.dataSources!.push('Company Website');
+        console.log(`✅ Found procurement emails:`, procurementContacts);
+      }
+    } catch (error) {
+      console.error('Procurement email scraping error:', error);
     }
   }
 
