@@ -1,17 +1,29 @@
 "use client"
 
-// This page requires browser APIs and cannot be prerendered
-export const dynamic = 'force-dynamic'
-export const runtime = 'edge'
-
 import { useState, useEffect } from 'react';
-import { MapView } from '@/components/map/MapView';
+import dynamic from 'next/dynamic';
 import { VesselList } from '@/components/VesselList';
 import { MapLegend } from '@/components/MapLegend';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Bell, Menu, Search, Ship, User } from 'lucide-react';
+
+// Dynamically import MapView to prevent SSR issues
+const MapView = dynamic(
+  () => import('@/components/map/MapView').then((mod) => ({ default: mod.MapView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Loading map...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 import { VesselPosition } from '@/lib/ais';
 import { useSSE } from '@/hooks/useSSE';
 import useSWR from 'swr';
@@ -102,12 +114,12 @@ export default function MapPage() {
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" asChild>
-            <Link href="/app/alerts">
+            <Link href="/alerts">
               <Bell className="h-4 w-4" />
             </Link>
           </Button>
           <Button variant="outline" size="icon" asChild>
-            <Link href="/app/settings">
+            <Link href="/settings">
               <User className="h-4 w-4" />
             </Link>
           </Button>

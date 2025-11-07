@@ -77,7 +77,7 @@ export default async function HomePage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/app/map">
+              <Link href="/map">
                 View Live Map
               </Link>
             </Button>

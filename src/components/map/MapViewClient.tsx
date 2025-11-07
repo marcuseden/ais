@@ -21,8 +21,8 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
   const markersRef = useRef<Map<number, L.Marker>>(new Map());
   
   useEffect(() => {
-    // Only initialize if map doesn't exist
-    if (containerRef.current && !mapInstanceRef.current) {
+    // Only initialize if map doesn't exist and we're on the client
+    if (containerRef.current && !mapInstanceRef.current && typeof window !== 'undefined') {
       // Create map
       const map = L.map(containerRef.current).setView(defaultCenter, zoom);
       
@@ -46,14 +46,14 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
   
   // Update map view when center/zoom changes
   useEffect(() => {
-    if (mapInstanceRef.current && center) {
+    if (mapInstanceRef.current && center && typeof window !== 'undefined') {
       mapInstanceRef.current.setView(center, zoom);
     }
   }, [center, zoom]);
   
   // Update markers when vessels change
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || typeof window === 'undefined') return;
     
     const map = mapInstanceRef.current;
     
@@ -88,7 +88,7 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
             </div>
           </div>
           <div class="mt-2 pt-2 border-t">
-            <a href="/app/vessel/${vessel.mmsi}" class="text-blue-600 hover:underline text-xs font-medium">
+            <a href="/vessel/${vessel.mmsi}" class="text-blue-600 hover:underline text-xs font-medium">
               View Full Details →
             </a>
           </div>
@@ -103,7 +103,7 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
           onVesselClick(vessel);
         }
         // Also navigate to vessel page
-        window.location.href = `/app/vessel/${vessel.mmsi}`;
+        window.location.href = `/vessel/${vessel.mmsi}`;
       });
     });
   }, [vessels, onVesselClick]);

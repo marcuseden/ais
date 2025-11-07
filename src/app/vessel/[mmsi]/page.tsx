@@ -193,7 +193,7 @@ export default function VesselPage() {
         <div className="text-center">
           <Ship className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground">Vessel not found</p>
-          <Button onClick={() => router.push('/app/map')} className="mt-4">
+          <Button onClick={() => router.push('/map')} className="mt-4">
             Back to Map
           </Button>
         </div>
@@ -207,7 +207,7 @@ export default function VesselPage() {
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/app/map')}>
+            <Button variant="ghost" size="icon" onClick={() => router.push('/map')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex-1">

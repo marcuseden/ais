@@ -21,7 +21,7 @@ export function VesselCard({ vessel, onClick, isSelected }: VesselCardProps) {
       }`}
       onClick={(e) => {
         e.stopPropagation();
-        router.push(`/app/vessel/${vessel.mmsi}`);
+        router.push(`/vessel/${vessel.mmsi}`);
       }}
     >
       <div className="p-3">

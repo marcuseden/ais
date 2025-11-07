@@ -30,7 +30,7 @@ export default function LoginPage() {
       if (error) throw error;
 
       // Redirect immediately - middleware will handle auth check
-      router.push('/app/map');
+      router.push('/map');
       router.refresh();
     } catch (error: any) {
       setMessage({
