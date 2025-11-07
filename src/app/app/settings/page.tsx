@@ -12,11 +12,17 @@ export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
   const [userEmail, setUserEmail] = useState<string>('');
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) {
-        setUserEmail(user.email);
+      if (user) {
+        setUserEmail(user.email || '');
+        setUserProfile({
+          fullName: user.user_metadata?.full_name || '',
+          phone: user.user_metadata?.phone || '',
+          company: user.user_metadata?.company || '',
+        });
       }
     });
   }, [supabase]);
@@ -49,20 +55,43 @@ export default function SettingsPage() {
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="space-y-6">
-          {/* Account */}
+          {/* Profile */}
           <Card>
             <CardHeader>
-              <CardTitle>Account</CardTitle>
+              <CardTitle>Profile</CardTitle>
               <CardDescription>Your account information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4 p-4 bg-muted rounded-xl">
-                <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
-                  <User className="h-6 w-6 text-white" />
+                <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-bold">
+                  {userProfile?.fullName?.charAt(0) || 'E'}
                 </div>
-                <div>
-                  <div className="font-medium">{userEmail || 'Loading...'}</div>
-                  <div className="text-sm text-muted-foreground">Signed in</div>
+                <div className="flex-1">
+                  <div className="font-semibold text-lg">{userProfile?.fullName || 'Loading...'}</div>
+                  <div className="text-sm text-muted-foreground">{userEmail || 'Loading...'}</div>
+                  {userProfile?.company && (
+                    <div className="text-sm text-muted-foreground">{userProfile.company}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Profile Details */}
+              <div className="space-y-3">
+                {userProfile?.phone && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">Phone Number</div>
+                      <div className="font-medium">{userProfile.phone}</div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-muted">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">Email</div>
+                    <div className="font-medium">{userEmail}</div>
+                  </div>
                 </div>
               </div>
             </CardContent>

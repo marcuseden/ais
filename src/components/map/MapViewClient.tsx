@@ -18,6 +18,7 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
   const defaultCenter: [number, number] = center || [59.0, 18.0];
   const containerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<Map<number, L.Marker>>(new Map());
   
   useEffect(() => {
     // Only initialize if map doesn't exist
@@ -57,11 +58,8 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
     const map = mapInstanceRef.current;
     
     // Clear existing markers
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Marker) {
-        map.removeLayer(layer);
-      }
-    });
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.clear();
     
     // Add new markers
     vessels.forEach((vessel) => {
@@ -70,6 +68,9 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
       const marker = L.marker([vessel.lat, vessel.lng], {
         icon: getVesselIcon(vessel.ship_type),
       }).addTo(map);
+      
+      // Store marker reference
+      markersRef.current.set(vessel.mmsi, marker);
       
       // Add popup
       const popupContent = `
@@ -86,14 +87,24 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
               <span class="font-medium">Last seen:</span> ${formatDistanceToNow(new Date(vessel.ts), { addSuffix: true })}
             </div>
           </div>
+          <div class="mt-2 pt-2 border-t">
+            <a href="/app/vessel/${vessel.mmsi}" class="text-blue-600 hover:underline text-xs font-medium">
+              View Full Details →
+            </a>
+          </div>
         </div>
       `;
       
       marker.bindPopup(popupContent);
       
-      if (onVesselClick) {
-        marker.on('click', () => onVesselClick(vessel));
-      }
+      // Click navigates to vessel page
+      marker.on('click', () => {
+        if (onVesselClick) {
+          onVesselClick(vessel);
+        }
+        // Also navigate to vessel page
+        window.location.href = `/app/vessel/${vessel.mmsi}`;
+      });
     });
   }, [vessels, onVesselClick]);
   
