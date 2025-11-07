@@ -41,7 +41,7 @@ export async function GET(
         .from('vessel_chats')
         .insert as any)({
           vessel_mmsi: mmsi,
-          vessel_name: vessel?.name || `Vessel ${mmsi}`,
+          vessel_name: (vessel as any)?.name || `Vessel ${mmsi}`,
           created_by: user.id,
         })
         .select()
@@ -54,11 +54,15 @@ export async function GET(
       chat = newChat;
     }
 
+    if (!chat) {
+      return NextResponse.json({ error: 'Failed to create or find chat' }, { status: 500 });
+    }
+
     // Get messages
     const { data: messages } = await supabaseAdmin
       .from('chat_messages')
       .select('*')
-      .eq('chat_id', chat.id)
+      .eq('chat_id', (chat as any).id)
       .order('sent_at', { ascending: true });
 
     return NextResponse.json({
@@ -115,9 +119,9 @@ export async function POST(
     }
 
     // Update chat last_message_at
-    await supabaseAdmin
+    await (supabaseAdmin
       .from('vessel_chats')
-      .update({ last_message_at: new Date().toISOString() })
+      .update as any)({ last_message_at: new Date().toISOString() })
       .eq('id', chatId);
 
     return NextResponse.json(newMessage);

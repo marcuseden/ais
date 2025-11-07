@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if vessel has opted in to receive messages
-    if (!contact.can_receive_alerts && contact.data_source === 'opt_in') {
+    if (!(contact as any).can_receive_alerts && (contact as any).data_source === 'opt_in') {
       return NextResponse.json(
         { error: 'Vessel owner has not opted in to receive messages' },
         { status: 403 }
@@ -47,16 +47,16 @@ export async function POST(request: NextRequest) {
     }
 
     // For public registry data, require explicit consent per message
-    if (contact.data_source === 'public_registry') {
+    if ((contact as any).data_source === 'public_registry') {
       return NextResponse.json(
         { 
           error: 'Public registry contact - manual consent required',
           note: 'This contact info is from public records. You must obtain explicit consent before sending commercial messages.',
           contactInfo: {
-            company: contact.company_name,
-            email: contact.business_email,
-            phone: contact.business_phone,
-            source: contact.registry_source,
+            company: (contact as any).company_name,
+            email: (contact as any).business_email,
+            phone: (contact as any).business_phone,
+            source: (contact as any).registry_source,
           }
         },
         { status: 403 }
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the contact attempt (for GDPR compliance)
-    await supabaseAdmin
+    await (supabaseAdmin
       .from('contact_log')
-      .insert({
+      .insert as any)({
         vessel_mmsi: mmsi,
         contact_type: contactType,
         initiated_by: user.id,

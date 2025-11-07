@@ -40,7 +40,7 @@ export async function GET() {
       console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(vessels.length / batchSize)}...`);
 
       const results = await Promise.allSettled(
-        batch.map(async (vessel) => {
+        batch.map(async (vessel: any) => {
           // Check if already scraped recently (within 7 days)
           const { data: existing } = await supabaseAdmin
             .from('vessel_registry')
@@ -49,7 +49,7 @@ export async function GET() {
             .single();
 
           if (existing) {
-            const cacheAge = (Date.now() - new Date(existing.last_updated).getTime()) / (1000 * 60 * 60 * 24);
+            const cacheAge = (Date.now() - new Date((existing as any).last_updated).getTime()) / (1000 * 60 * 60 * 24);
             if (cacheAge < 7) {
               console.log(`✓ Cached: ${vessel.name || vessel.mmsi}`);
               return { status: 'cached', mmsi: vessel.mmsi };

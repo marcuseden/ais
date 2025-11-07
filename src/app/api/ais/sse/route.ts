@@ -38,9 +38,9 @@ async function batchUpdateDatabase() {
 
     console.log(`📦 Batch updating ${vessels.length} vessels to database...`);
 
-    const { error } = await supabaseAdmin
+    const { error } = await (supabaseAdmin
       .from('vessels')
-      .upsert(vessels, { onConflict: 'mmsi' });
+      .upsert as any)(vessels, { onConflict: 'mmsi' });
 
     if (error) {
       console.error('❌ Error updating vessels:', error);
