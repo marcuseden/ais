@@ -130,41 +130,75 @@ export default function MapPage() {
       </div>
 
       {/* Main Content - Full Height */}
-      <div className="flex-1 flex relative overflow-hidden">
-        {/* Map - 100% Height */}
-        <div className="flex-1 relative h-full">
-          <div className="absolute inset-0">
-            <MapView
+      <div className="flex-1 flex flex-col relative overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Map - 100% Height */}
+          <div className="flex-1 relative h-full">
+            <div className="absolute inset-0">
+              <MapView
+                vessels={filteredVessels}
+                center={selectedVessel ? [selectedVessel.lat, selectedVessel.lng] : undefined}
+                zoom={selectedVessel ? 10 : 6}
+                onVesselClick={handleVesselClick}
+              />
+            </div>
+
+            {/* Vessel Count Badge */}
+            <div className="absolute top-4 right-4 z-[1000]">
+              <Card className="px-4 py-2 shadow-lg">
+                <div className="text-sm font-medium">
+                  {filteredVessels.length} vessels
+                </div>
+              </Card>
+            </div>
+
+            {/* Map Legend */}
+            <div className="absolute bottom-4 left-4 z-[1000]">
+              <MapLegend />
+            </div>
+          </div>
+
+          {/* Desktop Sidebar - Full Height */}
+          <div className="hidden md:block w-96 bg-white border-l flex-shrink-0 h-full">
+            <VesselList
               vessels={filteredVessels}
-              center={selectedVessel ? [selectedVessel.lat, selectedVessel.lng] : undefined}
-              zoom={selectedVessel ? 10 : 6}
               onVesselClick={handleVesselClick}
+              selectedVessel={selectedVessel}
             />
           </div>
+        </div>
 
-          {/* Vessel Count Badge */}
-          <div className="absolute top-4 right-4 z-[1000]">
-            <Card className="px-4 py-2 shadow-lg">
-              <div className="text-sm font-medium">
-                {filteredVessels.length} vessels
+        {/* Selected Vessel Info Bar - Below Map */}
+        {selectedVessel && (
+          <div className="hidden md:block border-t bg-white">
+            <div className="container mx-auto px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="font-semibold text-lg">
+                    {selectedVessel.name || `MMSI: ${selectedVessel.mmsi}`}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedVessel.ship_type || 'Unknown Type'}
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-center gap-3">
+                    <span>Speed: {selectedVessel.sog?.toFixed(1) || 'N/A'} kn</span>
+                    <span>•</span>
+                    <span>Course: {selectedVessel.cog?.toFixed(0) || 'N/A'}°</span>
+                    <span>•</span>
+                    <span>Position: {selectedVessel.lat.toFixed(4)}, {selectedVessel.lng.toFixed(4)}</span>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedVessel(null)}
+                >
+                  Close
+                </Button>
               </div>
-            </Card>
+            </div>
           </div>
-
-          {/* Map Legend */}
-          <div className="absolute bottom-8 left-4 z-[1000]">
-            <MapLegend />
-          </div>
-        </div>
-
-        {/* Desktop Sidebar - Full Height */}
-        <div className="hidden md:block w-96 bg-white border-l flex-shrink-0 h-full">
-          <VesselList
-            vessels={filteredVessels}
-            onVesselClick={handleVesselClick}
-            selectedVessel={selectedVessel}
-          />
-        </div>
+        )}
 
         {/* Mobile Bottom Sheet */}
         {showList && (
