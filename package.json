@@ -9,7 +9,7 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
     "migrate": "tsx scripts/run-migration.ts",
-    "test-sms": "tsx test-sms.ts"
+    "enrich": "tsx scripts/batch-enrich-equasis.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -53,6 +53,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.16",
+    "dotenv": "^17.2.3",
     "eslint": "^8",
     "eslint-config-next": "15.0.2",
     "postcss": "^8",
