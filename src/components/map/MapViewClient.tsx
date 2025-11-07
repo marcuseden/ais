@@ -4,28 +4,8 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { VesselPosition } from '@/lib/ais';
+import { getVesselIcon } from '@/lib/vesselIcons';
 import { formatDistanceToNow } from 'date-fns';
-
-// Custom vessel icon - only create on client
-let vesselIcon: L.Icon | null = null;
-
-function getVesselIcon() {
-  if (!vesselIcon) {
-    vesselIcon = new L.Icon({
-      iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 18L7.5 12L12 18L16.5 12L21 18" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M12 2L12 12" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="10" stroke="#f97316" stroke-width="2" fill="#fff"/>
-        </svg>
-      `),
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16],
-    });
-  }
-  return vesselIcon;
-}
 
 interface MapViewClientProps {
   vessels: VesselPosition[];
@@ -88,7 +68,7 @@ export function MapViewClient({ vessels, center, zoom = 6, onVesselClick }: MapV
       if (!vessel.lat || !vessel.lng) return;
       
       const marker = L.marker([vessel.lat, vessel.lng], {
-        icon: getVesselIcon(),
+        icon: getVesselIcon(vessel.ship_type),
       }).addTo(map);
       
       // Add popup

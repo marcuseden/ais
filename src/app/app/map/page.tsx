@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { MapView } from '@/components/map/MapView';
 import { VesselList } from '@/components/VesselList';
+import { MapLegend } from '@/components/MapLegend';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -148,6 +149,11 @@ export default function MapPage() {
                 {filteredVessels.length} vessels
               </div>
             </Card>
+          </div>
+
+          {/* Map Legend */}
+          <div className="absolute bottom-8 left-4 z-[1000]">
+            <MapLegend />
           </div>
         </div>
 
