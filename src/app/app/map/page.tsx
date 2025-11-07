@@ -128,16 +128,18 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex relative">
-        {/* Map */}
-        <div className="flex-1 relative">
-          <MapView
-            vessels={filteredVessels}
-            center={selectedVessel ? [selectedVessel.lat, selectedVessel.lng] : undefined}
-            zoom={selectedVessel ? 10 : 6}
-            onVesselClick={handleVesselClick}
-          />
+      {/* Main Content - Full Height */}
+      <div className="flex-1 flex relative overflow-hidden">
+        {/* Map - 100% Height */}
+        <div className="flex-1 relative h-full">
+          <div className="absolute inset-0">
+            <MapView
+              vessels={filteredVessels}
+              center={selectedVessel ? [selectedVessel.lat, selectedVessel.lng] : undefined}
+              zoom={selectedVessel ? 10 : 6}
+              onVesselClick={handleVesselClick}
+            />
+          </div>
 
           {/* Vessel Count Badge */}
           <div className="absolute top-4 right-4 z-[1000]">
@@ -150,7 +152,7 @@ export default function MapPage() {
         </div>
 
         {/* Desktop Sidebar - Full Height */}
-        <div className="hidden md:block w-96 bg-white border-l h-full">
+        <div className="hidden md:block w-96 bg-white border-l flex-shrink-0 h-full">
           <VesselList
             vessels={filteredVessels}
             onVesselClick={handleVesselClick}
