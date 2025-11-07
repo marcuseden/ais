@@ -232,7 +232,7 @@ export default function VesselPage() {
                   lng: vessel.last_lng,
                   sog: vessel.sog,
                   cog: vessel.cog,
-                  ts: vessel.last_seen,
+                  ts: new Date(vessel.last_seen),
                 }]}
                 center={[vessel.last_lat, vessel.last_lng]}
                 zoom={12}

@@ -31,7 +31,6 @@ export async function GET(
     }
 
     return NextResponse.json({
-      mmsi,
       found: true,
       ...vesselData,
     });

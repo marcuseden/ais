@@ -62,7 +62,7 @@ export async function lookupVesselOwner(mmsi: number): Promise<VesselOwnerInfo |
 
     if (existing) {
       // Check if data is still fresh (less than 30 days old)
-      const lastVerified = new Date(existing.last_verified || existing.created_at);
+      const lastVerified = new Date((existing as any).last_verified || (existing as any).created_at);
       const daysSinceVerification = (Date.now() - lastVerified.getTime()) / (1000 * 60 * 60 * 24);
       
       if (daysSinceVerification < 30) {
@@ -96,9 +96,9 @@ export async function lookupVesselOwner(mmsi: number): Promise<VesselOwnerInfo |
         last_verified: new Date().toISOString(),
       };
 
-      await supabaseAdmin
+      await (supabaseAdmin
         .from('vessel_contacts')
-        .upsert(contactData, { onConflict: 'mmsi' });
+        .upsert as any)(contactData, { onConflict: 'mmsi' });
 
       return ownerInfo as VesselOwnerInfo;
     }

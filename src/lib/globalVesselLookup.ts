@@ -272,7 +272,7 @@ export async function globalVesselLookup(mmsi: number): Promise<GlobalVesselData
       .single();
 
     if (cached) {
-      const cacheAge = (Date.now() - new Date(cached.last_updated).getTime()) / (1000 * 60 * 60 * 24);
+      const cacheAge = (Date.now() - new Date((cached as any).last_updated).getTime()) / (1000 * 60 * 60 * 24);
       
       if (cacheAge < 7) { // Cache valid for 7 days
         console.log(`✅ Using cached registry data for MMSI ${mmsi}`);
@@ -331,9 +331,9 @@ export async function globalVesselLookup(mmsi: number): Promise<GlobalVesselData
       (sourceCount * 3);
 
     // Store in database
-    await supabaseAdmin
+    await (supabaseAdmin
       .from('vessel_registry')
-      .upsert({
+      .upsert as any)({
         mmsi,
         imo_number: mergedData.imoNumber || null,
         vessel_name: mergedData.vesselName || null,

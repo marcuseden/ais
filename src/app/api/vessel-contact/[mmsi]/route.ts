@@ -24,9 +24,9 @@ export async function GET(
     const ownerInfo = await lookupVesselOwner(mmsi);
 
     // Log that Erik viewed this contact info (for GDPR compliance)
-    await supabaseAdmin
+    await (supabaseAdmin
       .from('contact_log')
-      .insert({
+      .insert as any)({
         vessel_mmsi: mmsi,
         contact_type: 'viewed',
         initiated_by: user.id,
@@ -41,7 +41,6 @@ export async function GET(
     }
 
     return NextResponse.json({
-      mmsi,
       available: true,
       ...ownerInfo,
     });

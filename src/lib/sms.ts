@@ -20,9 +20,9 @@ export async function sendErikAlert({ vesselName, mmsi, shipType, alertEventId }
 
   try {
     // Log to database first
-    const { data: log, error: logError } = await supabaseAdmin
+    const { data: log, error: logError } = await (supabaseAdmin
       .from('sms_notifications')
-      .insert({
+      .insert as any)({
         recipient_phone: ERIK_PHONE,
         message_text: message,
         vessel_mmsi: mmsi,
@@ -44,10 +44,10 @@ export async function sendErikAlert({ vesselName, mmsi, shipType, alertEventId }
       console.log(`📱 Would send to ${ERIK_PHONE}: ${message}`);
       
       // Update status to 'sent' for demo purposes
-      await supabaseAdmin
+      await (supabaseAdmin
         .from('sms_notifications')
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
-        .eq('id', log.id);
+        .update as any)({ status: 'sent', sent_at: new Date().toISOString() })
+        .eq('id', (log as any).id);
 
       return { success: true, demo: true, message };
     }
@@ -75,13 +75,13 @@ export async function sendErikAlert({ vesselName, mmsi, shipType, alertEventId }
     }
 
     // Update status to sent
-    await supabaseAdmin
+    await (supabaseAdmin
       .from('sms_notifications')
-      .update({ 
+      .update as any)({ 
         status: 'sent', 
         sent_at: new Date().toISOString() 
       })
-      .eq('id', log.id);
+      .eq('id', (log as any).id);
 
     console.log(`✅ SMS sent to Erik about ${vesselName}`);
     return { success: true, message };
@@ -90,9 +90,9 @@ export async function sendErikAlert({ vesselName, mmsi, shipType, alertEventId }
     console.error('❌ SMS send failed:', error);
     
     // Log failure
-    await supabaseAdmin
+    await (supabaseAdmin
       .from('sms_notifications')
-      .update({ 
+      .update as any)({ 
         status: 'failed',
         error_message: error instanceof Error ? error.message : 'Unknown error'
       })

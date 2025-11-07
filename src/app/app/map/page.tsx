@@ -1,5 +1,9 @@
 "use client"
 
+// This page requires browser APIs and cannot be prerendered
+export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
+
 import { useState, useEffect } from 'react';
 import { MapView } from '@/components/map/MapView';
 import { VesselList } from '@/components/VesselList';
